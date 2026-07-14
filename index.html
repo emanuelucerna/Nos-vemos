@@ -137,6 +137,13 @@ h2{ font-family:'Pacifico', cursive; font-weight:400; color:var(--rosa-fuerte);
 .plan .check{ margin-left:auto; font-size:1.3rem; opacity:0; transition:opacity .2s; }
 .plan.activo .check{ opacity:1; }
 
+/* Campo de texto para "Otro" (lugar o plan) */
+.input-otro{ width:100%; max-width:340px; margin:12px auto 0; display:block; font-family:'Quicksand'; font-weight:600;
+  font-size:1.02rem; color:var(--texto); padding:15px 18px; border-radius:18px; border:2.5px solid var(--lila-suave);
+  background:var(--blanco); box-shadow:0 6px 16px -12px var(--sombra); text-align:center; }
+.input-otro:focus{ border-color:var(--rosa); outline:none; }
+.input-otro::placeholder{ color:var(--texto-claro); font-weight:500; }
+
 /* ============================================================
    PANTALLA FINAL
    ============================================================ */
@@ -202,6 +209,7 @@ h2{ font-family:'Pacifico', cursive; font-weight:400; color:var(--rosa-fuerte);
         <option value="" disabled selected>Elegí un lugar…</option>
       </select>
     </div>
+    <input type="text" id="otroLugar" class="input-otro" placeholder="Escribí el lugar ✍️" maxlength="40" style="display:none">
     <p class="lugar-elegido" id="lugarElegido"></p>
     <div style="margin-top:18px"><button class="btn" id="btnLugar" disabled>Siguiente 💞</button></div>
   </section>
@@ -211,6 +219,7 @@ h2{ font-family:'Pacifico', cursive; font-weight:400; color:var(--rosa-fuerte);
     <h2>Elegí el plan, Luciana 💫</h2>
     <p class="subtitulo">¿Qué te tienta más? 🥰</p>
     <div class="planes" id="planes"></div>
+    <input type="text" id="otroPlan" class="input-otro" placeholder="Escribí el plan ✍️" maxlength="60" style="display:none">
     <div style="margin-top:20px"><button class="btn" id="btnPlan" disabled>Confirmar plan 💖</button></div>
   </section>
 
@@ -235,7 +244,10 @@ h2{ font-family:'Pacifico', cursive; font-weight:400; color:var(--rosa-fuerte);
 const CONFIG = {
   autor: "Emanuel",
   ella: "Lu",
-  notaFutbol: "fecha sujeta a pequeños ajustes según mis partidos ⚽😅",
+  notaFutbol: "fecha sujeta a pequeños ajustes según mis partidos ⚽ o alguna otra cosa que se me cruce 😬😅",
+
+  // Fechas que NO se pueden elegir (formato AAAA-MM-DD)
+  fechasBloqueadas: ["2026-08-15", "2026-08-16"],
 
   // Localidades cerca de Fray Bentos (editá / agregá las que quieras)
   lugares: [
@@ -253,10 +265,10 @@ const CONFIG = {
 
   planes: [
     { emoji:"☕", titulo:"Café y charla",     desc:"Algo tranqui para conocernos mejor" },
-    { emoji:"🍕", titulo:"Comida rica",       desc:"Pizza, algo casero, lo que prefieras" },
+    { emoji:"🍕", titulo:"Comida rica",       desc:"Pizza, Milanesas, lo que prefieras" },
     { emoji:"🌅", titulo:"Paseo al atardecer",desc:"Caminar y ver el cielo pintarse" },
-    { emoji:"🎬", titulo:"Peli y pochoclos",  desc:"Plan relajado, mantita incluida" },
-    { emoji:"🎲", titulo:"Sorpresa",          desc:"Dejámelo a mí 😏" }
+    { emoji:"🎬", titulo:"Peli y pochoclos",  desc:"Plan chill" },
+    { emoji:"🎲", titulo:"Sorpresa",          desc:"Dejámelo a mí 😏(Mentira no se)" }
   ],
 
   /* ---- A DÓNDE LLEGAN LOS RESULTADOS ---- */
@@ -269,7 +281,7 @@ const CONFIG = {
     emailjs: {
       publicKey:  "pjkFQPrhKW5xj2xA1",
       serviceId:  "service_9riocr9",   // ⬅️ reemplazar
-      templateId: "template_hxx3jn3"   // ⬅️ reemplazar
+      templateId: "template_5ckhr74"   // ⬅️ reemplazar
     }
   }
 };
@@ -312,8 +324,10 @@ document.getElementById("notaFutbol").textContent = CONFIG.notaFutbol;
    ============================================================ */
 const btnSi=document.getElementById("btnSi"), btnNo=document.getElementById("btnNo"), mensajeNo=document.getElementById("mensajeNo");
 let intentosNo=0, escalaSi=1;
+const maxEscapesNo=8; // cuántas veces escapa antes de desaparecer
 const frasesNo=["no vas a poder 😏","intentalo de nuevo 🙈","jajaja no 💅","es que sí 💕","dale, decí que sí 🥺"];
 function escaparNo(){
+  if(intentosNo>=maxEscapesNo) return; // ya desapareció
   btnNo.classList.add("escapando");
   const m=20, w=btnNo.offsetWidth, h=btnNo.offsetHeight;
   const x=Math.max(m, Math.random()*(window.innerWidth-w-m));
@@ -322,6 +336,13 @@ function escaparNo(){
   btnNo.classList.remove("escape-anim"); void btnNo.offsetWidth; btnNo.classList.add("escape-anim");
   escalaSi=Math.min(escalaSi+0.08,1.55); btnSi.style.transform="scale("+escalaSi+")";
   if(++intentosNo>=3) mensajeNo.textContent=frasesNo[(intentosNo-3)%frasesNo.length];
+  if(intentosNo>=maxEscapesNo){ // se rinde y desaparece
+    btnNo.style.transition="opacity .4s, transform .4s";
+    btnNo.style.opacity="0"; btnNo.style.transform="scale(.4) rotate(20deg)";
+    setTimeout(()=>{ btnNo.style.display="none"; }, 420);
+    mensajeNo.textContent="era la única opción 💖";
+    escalaSi=Math.min(escalaSi+0.15,1.7); btnSi.style.transform="scale("+escalaSi+")";
+  }
 }
 btnNo.addEventListener("mouseenter",escaparNo);
 btnNo.addEventListener("mousedown",e=>{e.preventDefault();escaparNo();});
@@ -346,8 +367,10 @@ function construirMes(anio,mes){
   const dias=new Date(anio,mes+1,0).getDate();
   for(let d=1;d<=dias;d++){
     const fecha=new Date(anio,mes,d), ds=fecha.getDay(), finde=(ds===0||ds===6), pasado=fecha<hoy;
+    const clave=`${anio}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const bloqueada=(CONFIG.fechasBloqueadas||[]).includes(clave);
     const c=document.createElement("div"); c.className="dia"; c.textContent=d;
-    if(finde&&!pasado){
+    if(finde&&!pasado&&!bloqueada){
       c.classList.add("finde"); c.setAttribute("role","button"); c.setAttribute("tabindex","0");
       c.setAttribute("aria-label",fecha.toLocaleDateString("es-UY",{weekday:"long",day:"numeric",month:"long"}));
       const el=()=>seleccionarFecha(fecha,c);
@@ -374,13 +397,32 @@ document.getElementById("btnFecha").addEventListener("click",()=>irAPantalla(2))
    ============================================================ */
 (function(){
   const sel=document.getElementById("selectLugar");
+  const inputOtro=document.getElementById("otroLugar");
+  const elegido=document.getElementById("lugarElegido");
+  const btn=document.getElementById("btnLugar");
   CONFIG.lugares.forEach(l=>{ const o=document.createElement("option"); o.value=l.nombre; o.textContent=l.emoji+"  "+l.nombre; sel.appendChild(o); });
+  // Opción para escribir un lugar propio
+  const oOtro=document.createElement("option"); oOtro.value="__otro__"; oOtro.textContent="✏️  Otro (escribir)"; sel.appendChild(oOtro);
+
   sel.addEventListener("change",()=>{
+    if(sel.value==="__otro__"){
+      inputOtro.style.display="block"; inputOtro.focus();
+      const v=inputOtro.value.trim();
+      seleccion.lugar = v?{nombre:v,emoji:"✨"}:null;
+      elegido.textContent = v?(v+" ✨"):"";
+      btn.disabled = !v;
+      return;
+    }
+    inputOtro.style.display="none";
     const l=CONFIG.lugares.find(x=>x.nombre===sel.value);
-    if(!l){ seleccion.lugar=null; document.getElementById("btnLugar").disabled=true; return; }
-    seleccion.lugar=l;
-    document.getElementById("lugarElegido").textContent=l.nombre+" "+l.emoji;
-    document.getElementById("btnLugar").disabled=false;
+    if(!l){ seleccion.lugar=null; btn.disabled=true; elegido.textContent=""; return; }
+    seleccion.lugar=l; elegido.textContent=l.nombre+" "+l.emoji; btn.disabled=false;
+  });
+  inputOtro.addEventListener("input",()=>{
+    const v=inputOtro.value.trim();
+    seleccion.lugar = v?{nombre:v,emoji:"✨"}:null;
+    elegido.textContent = v?(v+" ✨"):"";
+    btn.disabled = !v;
   });
 })();
 document.getElementById("btnLugar").addEventListener("click",()=>irAPantalla(3));
@@ -390,6 +432,7 @@ document.getElementById("btnLugar").addEventListener("click",()=>irAPantalla(3))
    ============================================================ */
 (function(){
   const cont=document.getElementById("planes");
+  const inputOtro=document.getElementById("otroPlan");
   CONFIG.planes.forEach(plan=>{
     const card=document.createElement("div"); card.className="plan";
     card.setAttribute("role","button"); card.setAttribute("tabindex","0"); card.setAttribute("aria-label",plan.titulo);
@@ -400,10 +443,32 @@ document.getElementById("btnLugar").addEventListener("click",()=>irAPantalla(3))
     card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();el();}});
     cont.appendChild(card);
   });
+  // Tarjeta para escribir un plan propio
+  const cardOtro=document.createElement("div"); cardOtro.className="plan";
+  cardOtro.setAttribute("role","button"); cardOtro.setAttribute("tabindex","0"); cardOtro.setAttribute("aria-label","Otro plan");
+  cardOtro.innerHTML=`<div class="plan-emoji">✏️</div>
+    <div class="plan-txt"><h3>Otro…</h3><p>Escribí el plan que se te ocurra</p></div><div class="check">💗</div>`;
+  const elOtro=()=>{
+    document.querySelectorAll(".plan.activo").forEach(p=>p.classList.remove("activo"));
+    cardOtro.classList.add("activo");
+    inputOtro.style.display="block"; inputOtro.focus();
+    const v=inputOtro.value.trim();
+    seleccion.plan = v?{titulo:v,emoji:"✨",desc:""}:null;
+    document.getElementById("btnPlan").disabled = !v;
+  };
+  cardOtro.addEventListener("click",elOtro);
+  cardOtro.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();elOtro();}});
+  cont.appendChild(cardOtro);
+  inputOtro.addEventListener("input",()=>{
+    const v=inputOtro.value.trim();
+    seleccion.plan = v?{titulo:v,emoji:"✨",desc:""}:null;
+    document.getElementById("btnPlan").disabled = !v;
+  });
 })();
 function seleccionarPlan(plan,card){
   document.querySelectorAll(".plan.activo").forEach(p=>p.classList.remove("activo"));
   card.classList.add("activo"); seleccion.plan=plan; document.getElementById("btnPlan").disabled=false;
+  const ip=document.getElementById("otroPlan"); if(ip) ip.style.display="none";
 }
 document.getElementById("btnPlan").addEventListener("click",()=>{ armarResumen(); irAPantalla(4); });
 
