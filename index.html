@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>¿Nos vemos? 🥰</title>
+
+<!-- Tipografías tiernas -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   PALETA PASTEL (rosa, lila, durazno)
+   ============================================================ */
+:root{
+  --rosa:#FF8FB1; --rosa-fuerte:#E96A8D;
+  --lila:#C6A8E9; --lila-suave:#E4D4F7;
+  --durazno:#FFC9A9; --crema:#FFF6F0;
+  --texto:#7A5468; --texto-claro:#A98A9B;
+  --blanco:#FFFFFF; --sombra:rgba(233,106,141,.22);
+}
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body{ height:100%; }
+
+body{
+  font-family:'Quicksand', system-ui, sans-serif; color:var(--texto);
+  background:
+    radial-gradient(1200px 600px at 20% -10%, #FFE3EC 0%, transparent 55%),
+    radial-gradient(1000px 700px at 110% 20%, #EFE0FB 0%, transparent 50%),
+    linear-gradient(160deg, #FFF0F5 0%, #FDEBFB 45%, #FFF3E9 100%);
+  min-height:100dvh;
+  display:flex; justify-content:center; align-items:flex-start;   /* no recorta arriba en pantallas altas */
+  overflow-x:hidden; padding:22px 16px calc(88px + env(safe-area-inset-bottom)); position:relative;
+}
+
+/* Corazoncitos de ambiente */
+.fondo-corazones{ position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
+.fondo-corazones span{ position:absolute; bottom:-40px; font-size:20px; opacity:.35; animation:subirCorazon linear infinite; }
+@keyframes subirCorazon{
+  0%{ transform:translateY(0) rotate(0); opacity:0; } 10%{ opacity:.35; }
+  90%{ opacity:.25; } 100%{ transform:translateY(-115dvh) rotate(220deg); opacity:0; }
+}
+
+/* ============================================================
+   TARJETA + PANTALLAS
+   ============================================================ */
+.tarjeta{
+  position:relative; z-index:1; width:100%; max-width:430px; margin:auto;  /* centra vertical y permite scroll */
+  background:rgba(255,255,255,.72); backdrop-filter:blur(10px);
+  border:2px solid rgba(255,255,255,.9); border-radius:32px;
+  box-shadow:0 24px 60px -18px var(--sombra), 0 4px 14px -6px rgba(198,168,233,.3);
+  padding:30px 22px 52px; overflow:hidden;
+}
+.pantalla{ display:none; text-align:center; }
+.pantalla.activa{ display:block; animation:entrar .55s cubic-bezier(.2,.8,.25,1); }
+@keyframes entrar{ from{opacity:0; transform:translateY(24px) scale(.97);} to{opacity:1; transform:translateY(0) scale(1);} }
+.pantalla.saliendo{ animation:salir .35s ease forwards; }
+@keyframes salir{ to{opacity:0; transform:translateY(-18px) scale(.98);} }
+
+/* ============================================================
+   TIPOGRAFÍA
+   ============================================================ */
+h1{ font-family:'Pacifico', cursive; font-weight:400; line-height:1.15; color:var(--rosa-fuerte);
+    font-size:clamp(1.9rem, 8vw, 2.8rem); margin-bottom:10px; text-shadow:0 2px 0 rgba(255,255,255,.8); }
+h2{ font-family:'Pacifico', cursive; font-weight:400; color:var(--rosa-fuerte);
+    font-size:clamp(1.45rem, 6vw, 2rem); margin-bottom:6px; }
+.subtitulo{ color:var(--texto-claro); font-weight:500; font-size:1rem; margin-bottom:20px; }
+.nota{ font-style:italic; font-size:.9rem; color:var(--lila); margin-top:14px; font-weight:600; }
+
+/* ============================================================
+   BOTONES
+   ============================================================ */
+.btn{ font-family:'Quicksand'; font-weight:700; border:none; cursor:pointer; border-radius:999px;
+      padding:15px 30px; font-size:1.1rem; color:var(--blanco);
+      background:linear-gradient(135deg, var(--rosa), var(--rosa-fuerte));
+      box-shadow:0 10px 22px -8px var(--sombra); transition:transform .15s, box-shadow .15s, opacity .2s; }
+.btn:hover{ transform:translateY(-2px); box-shadow:0 14px 26px -8px var(--sombra); }
+.btn:active{ transform:translateY(0) scale(.97); }
+.btn:disabled{ background:linear-gradient(135deg,#E7D7E6,#DAC7E3); cursor:not-allowed; opacity:.7; box-shadow:none; transform:none; }
+
+.zona-botones{ display:flex; gap:16px; justify-content:center; align-items:center; flex-wrap:wrap; margin-top:26px; position:relative; min-height:70px; }
+#btnSi{ background:linear-gradient(135deg,#FF9EC0,var(--rosa-fuerte)); padding:16px 34px; font-size:1.15rem; transition:transform .25s cubic-bezier(.2,1.5,.4,1), box-shadow .2s; }
+#btnNo{ background:linear-gradient(135deg,#D9C7E8,#C6A8E9); color:#5f4a7a; }
+#btnNo.escapando{ position:fixed; z-index:50; }
+.escape-anim{ animation:escapar .4s ease; }
+@keyframes escapar{ 0%{transform:scale(1) rotate(0);} 40%{transform:scale(1.12) rotate(-12deg);} 100%{transform:scale(1) rotate(0);} }
+#mensajeNo{ width:100%; font-weight:600; color:var(--lila); min-height:22px; font-size:.95rem; }
+
+/* ============================================================
+   CALENDARIO
+   ============================================================ */
+.calendarios{ display:flex; flex-direction:column; gap:14px; }
+.mes{ background:var(--blanco); border-radius:20px; padding:12px 10px 13px; box-shadow:0 8px 20px -12px var(--sombra); }
+.mes-titulo{ font-weight:700; color:var(--rosa-fuerte); margin-bottom:8px; text-transform:capitalize; font-size:1rem; }
+.grilla{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.dia-encabezado{ font-size:.68rem; font-weight:700; color:var(--texto-claro); padding:3px 0; }
+.dia{ aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; border-radius:50%;
+      font-weight:600; font-size:.85rem; color:var(--texto-claro); user-select:none; }
+.dia.vacio{ visibility:hidden; }
+.dia.deshabilitado{ color:#D9CBD6; }
+.dia.finde{ color:var(--texto); background:var(--lila-suave); cursor:pointer; transition:transform .15s, background .2s; font-weight:700; }
+.dia.finde:hover{ transform:scale(1.12); background:#F3D9EE; }
+.dia.seleccionado{ background:linear-gradient(135deg,var(--rosa),var(--rosa-fuerte)); color:#fff; transform:scale(1.1);
+      box-shadow:0 6px 14px -4px var(--sombra); animation:latir .5s; }
+@keyframes latir{ 0%,100%{transform:scale(1.1);} 45%{transform:scale(1.28);} }
+
+/* ============================================================
+   DESPLEGABLE DE LUGAR
+   ============================================================ */
+.select-wrap{ position:relative; max-width:340px; margin:6px auto 0; }
+.select-lugar{
+  width:100%; display:block; font-family:'Quicksand'; font-weight:700; font-size:1.05rem; color:var(--texto);
+  padding:17px 48px 17px 20px; border-radius:20px; border:2.5px solid var(--lila-suave);
+  background-color:var(--blanco); appearance:none; -webkit-appearance:none; cursor:pointer;
+  box-shadow:0 6px 16px -12px var(--sombra); transition:border-color .2s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23C6A8E9' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 18px center; background-size:18px;
+}
+.select-lugar:focus{ border-color:var(--rosa); outline:none; }
+.select-lugar:invalid{ color:var(--texto-claro); }   /* placeholder atenuado */
+.lugar-elegido{ margin-top:14px; font-weight:700; color:var(--rosa-fuerte); font-size:1.15rem; min-height:26px; transition:opacity .3s; }
+
+/* ============================================================
+   PLANES
+   ============================================================ */
+.planes{ display:flex; flex-direction:column; gap:12px; margin-top:8px; text-align:left; }
+.plan{ display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--blanco);
+       border:2.5px solid transparent; border-radius:20px; cursor:pointer;
+       box-shadow:0 6px 16px -12px var(--sombra); transition:transform .15s, border-color .2s, background .2s; }
+.plan:hover{ transform:translateY(-2px); border-color:var(--lila-suave); }
+.plan.activo{ border-color:var(--rosa); background:linear-gradient(135deg,#FFF3F8,#FBEFFB); }
+.plan-emoji{ font-size:1.9rem; flex-shrink:0; }
+.plan-txt h3{ font-family:'Quicksand'; font-size:1.05rem; font-weight:700; color:var(--texto); }
+.plan-txt p{ font-size:.85rem; color:var(--texto-claro); font-weight:500; }
+.plan .check{ margin-left:auto; font-size:1.3rem; opacity:0; transition:opacity .2s; }
+.plan.activo .check{ opacity:1; }
+
+/* ============================================================
+   PANTALLA FINAL
+   ============================================================ */
+.final-emoji{ font-size:3.2rem; animation:rebote 1.4s ease-in-out infinite; }
+@keyframes rebote{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-12px);} }
+.resumen{ margin:18px auto 4px; max-width:340px; font-size:1.15rem; line-height:1.6; font-weight:600; }
+.resumen b{ color:var(--rosa-fuerte); }
+.estado-mail{ margin-top:14px; font-weight:600; font-size:.92rem; color:var(--lila); min-height:22px; }
+.btn-wa{ display:inline-flex; align-items:center; gap:8px; margin-top:16px; text-decoration:none;
+         font-family:'Quicksand'; font-weight:700; font-size:1rem; color:#fff; border-radius:999px;
+         padding:13px 24px; background:linear-gradient(135deg,#5BD97C,#25a35a); box-shadow:0 10px 22px -10px rgba(37,163,90,.5); }
+
+.confetti{ position:fixed; inset:0; pointer-events:none; z-index:40; overflow:hidden; }
+.confetti span{ position:absolute; top:-30px; font-size:22px; animation:caer linear forwards; }
+@keyframes caer{ 0%{transform:translateY(0) rotate(0); opacity:1;} 100%{transform:translateY(110dvh) rotate(360deg); opacity:0;} }
+
+/* ============================================================
+   FIRMA FIJA + PASOS
+   ============================================================ */
+.firma{ position:fixed; bottom:calc(14px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:60; font-weight:600; font-size:.85rem;
+        color:var(--texto-claro); background:rgba(255,255,255,.78); backdrop-filter:blur(6px);
+        padding:6px 16px; border-radius:999px; box-shadow:0 6px 16px -10px var(--sombra); white-space:nowrap; }
+.pasos{ display:flex; gap:7px; justify-content:center; margin-bottom:18px; }
+.pasos i{ width:8px; height:8px; border-radius:50%; background:var(--lila-suave); transition:background .3s, transform .3s; }
+.pasos i.on{ background:var(--rosa); transform:scale(1.25); }
+:focus-visible{ outline:3px solid var(--lila); outline-offset:3px; }
+@media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; } }
+</style>
+</head>
+<body>
+
+<div class="fondo-corazones" id="fondoCorazones" aria-hidden="true"></div>
+
+<main class="tarjeta">
+  <div class="pasos" id="pasos" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+
+  <!-- PANTALLA 1 -->
+  <section class="pantalla activa" id="p1">
+    <h1>¿Nos vemos, Lu? 🥰</h1>
+    <p class="subtitulo">Tengo algo que preguntarte 💕</p>
+    <div class="zona-botones">
+      <button class="btn" id="btnSi">Sí 💖</button>
+      <button class="btn" id="btnNo">No 🙈</button>
+      <p id="mensajeNo"></p>
+    </div>
+  </section>
+
+  <!-- PANTALLA 2 -->
+  <section class="pantalla" id="p2">
+    <h2>¿Qué día, Luli? 📅</h2>
+    <p class="subtitulo">Elegí un finde que te venga bien 💞</p>
+    <div class="calendarios" id="calendarios"></div>
+    <p class="nota" id="notaFutbol"></p>
+    <div style="margin-top:22px"><button class="btn" id="btnFecha" disabled>Siguiente 💞</button></div>
+  </section>
+
+  <!-- PANTALLA 3 (desplegable) -->
+  <section class="pantalla" id="p3">
+    <h2>¿Dónde, Lu? 📍</h2>
+    <p class="subtitulo">Elegí el lugar en la lista 🗺️</p>
+    <div class="select-wrap">
+      <select class="select-lugar" id="selectLugar" required aria-label="Elegí un lugar">
+        <option value="" disabled selected>Elegí un lugar…</option>
+      </select>
+    </div>
+    <p class="lugar-elegido" id="lugarElegido"></p>
+    <div style="margin-top:18px"><button class="btn" id="btnLugar" disabled>Siguiente 💞</button></div>
+  </section>
+
+  <!-- PANTALLA 4 -->
+  <section class="pantalla" id="p4">
+    <h2>Elegí el plan, Luciana 💫</h2>
+    <p class="subtitulo">¿Qué te tienta más? 🥰</p>
+    <div class="planes" id="planes"></div>
+    <div style="margin-top:20px"><button class="btn" id="btnPlan" disabled>Confirmar plan 💖</button></div>
+  </section>
+
+  <!-- PANTALLA 5 -->
+  <section class="pantalla" id="p5">
+    <div class="final-emoji">🥳</div>
+    <h2>¡Es una cita, Lu! 💕</h2>
+    <p class="resumen" id="resumenFinal"></p>
+    <p class="estado-mail" id="estadoMail"></p>
+    <a class="btn-wa" id="btnWhatsapp" style="display:none" target="_blank" rel="noopener">💬 Avisale a Emanuel</a>
+    <p class="subtitulo" style="margin-top:14px">No veo la hora 🥰✨</p>
+  </section>
+</main>
+
+<div class="firma" id="firma">hecho por Emanuel 💌</div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+/* ============================================================
+   ⚙️  CONFIGURACIÓN — editá todo desde acá
+   ============================================================ */
+const CONFIG = {
+  autor: "Emanuel",
+  ella: "Lu",
+  notaFutbol: "fecha sujeta a pequeños ajustes según mis partidos ⚽😅",
+
+  // Localidades cerca de Fray Bentos (editá / agregá las que quieras)
+  lugares: [
+    { nombre:"Fray Bentos",           emoji:"🏡" },
+    { nombre:"Mercedes",              emoji:"🌊" },
+    { nombre:"Young",                 emoji:"🌾" },
+    { nombre:"Dolores",               emoji:"🚣" },
+    { nombre:"Nueva Palmira",         emoji:"⚓" },
+    { nombre:"Carmelo",               emoji:"🍇" },
+    { nombre:"Nueva Helvecia",        emoji:"🧀" },
+    { nombre:"Colonia del Sacramento",emoji:"⛵" },
+    { nombre:"Ismael Cortinas",       emoji:"🌻" },
+    { nombre:"Paysandú",              emoji:"🌿" }
+  ],
+
+  planes: [
+    { emoji:"☕", titulo:"Café y charla",     desc:"Algo tranqui para conocernos mejor" },
+    { emoji:"🍕", titulo:"Comida rica",       desc:"Pizza, algo casero, lo que prefieras" },
+    { emoji:"🌅", titulo:"Paseo al atardecer",desc:"Caminar y ver el cielo pintarse" },
+    { emoji:"🎬", titulo:"Peli y pochoclos",  desc:"Plan relajado, mantita incluida" },
+    { emoji:"🎲", titulo:"Sorpresa",          desc:"Dejámelo a mí 😏" }
+  ],
+
+  /* ---- A DÓNDE LLEGAN LOS RESULTADOS ---- */
+  contacto: {
+    emailMio:  "lucerna.e12@gmail.com", // tu correo (te llega el plan)
+    emailElla: "",                        // ⬅️ (opcional) correo de Lu; vacío = no se le envía
+    whatsappMio: "59899303288",          // tu WhatsApp (+598 99 303 288) sin + ni espacios
+
+    // EmailJS. Pegá los DOS que te faltan (los tenés en tu panel de EmailJS):
+    emailjs: {
+      publicKey:  "pjkFQPrhKW5xj2xA1",
+      serviceId:  "service_9riocr9",   // ⬅️ reemplazar
+      templateId: "template_hxx3jn3"   // ⬅️ reemplazar
+    }
+  }
+};
+
+const seleccion = { fecha:null, fechaTxt:"", lugar:null, plan:null };
+
+/* ============================================================
+   NAVEGACIÓN
+   ============================================================ */
+const pantallas = ["p1","p2","p3","p4","p5"];
+let indiceActual = 0;
+function irAPantalla(indice){
+  const actual = document.getElementById(pantallas[indiceActual]);
+  const proxima = document.getElementById(pantallas[indice]);
+  actual.classList.add("saliendo");
+  setTimeout(()=>{
+    actual.classList.remove("activa","saliendo");
+    proxima.classList.add("activa");
+    indiceActual = indice; actualizarPasos();
+    window.scrollTo({top:0, behavior:"smooth"});
+    if(pantallas[indice]==="p5"){ lanzarConfetti(); notificar(); }
+  }, 330);
+}
+function actualizarPasos(){ document.querySelectorAll("#pasos i").forEach((p,i)=> p.classList.toggle("on", i<=indiceActual)); }
+
+/* Firma + nota + corazones de fondo */
+document.getElementById("firma").textContent = "hecho por " + CONFIG.autor + " 💌";
+document.getElementById("notaFutbol").textContent = CONFIG.notaFutbol;
+(function fondo(){
+  const cont = document.getElementById("fondoCorazones");
+  const e = ["💗","💕","🩷","💖","🌸"];
+  for(let i=0;i<14;i++){ const s=document.createElement("span");
+    s.textContent=e[Math.floor(Math.random()*e.length)]; s.style.left=Math.random()*100+"%";
+    s.style.fontSize=(14+Math.random()*18)+"px"; s.style.animationDuration=(9+Math.random()*9)+"s";
+    s.style.animationDelay=(Math.random()*9)+"s"; cont.appendChild(s); }
+})();
+
+/* ============================================================
+   PANTALLA 1 — botón "No" que escapa
+   ============================================================ */
+const btnSi=document.getElementById("btnSi"), btnNo=document.getElementById("btnNo"), mensajeNo=document.getElementById("mensajeNo");
+let intentosNo=0, escalaSi=1;
+const frasesNo=["no vas a poder 😏","intentalo de nuevo 🙈","jajaja no 💅","es que sí 💕","dale, decí que sí 🥺"];
+function escaparNo(){
+  btnNo.classList.add("escapando");
+  const m=20, w=btnNo.offsetWidth, h=btnNo.offsetHeight;
+  const x=Math.max(m, Math.random()*(window.innerWidth-w-m));
+  const y=Math.max(m, Math.random()*(window.innerHeight-h-m));
+  btnNo.style.left=x+"px"; btnNo.style.top=y+"px";
+  btnNo.classList.remove("escape-anim"); void btnNo.offsetWidth; btnNo.classList.add("escape-anim");
+  escalaSi=Math.min(escalaSi+0.08,1.55); btnSi.style.transform="scale("+escalaSi+")";
+  if(++intentosNo>=3) mensajeNo.textContent=frasesNo[(intentosNo-3)%frasesNo.length];
+}
+btnNo.addEventListener("mouseenter",escaparNo);
+btnNo.addEventListener("mousedown",e=>{e.preventDefault();escaparNo();});
+btnNo.addEventListener("click",e=>{e.preventDefault();escaparNo();});
+btnNo.addEventListener("touchstart",e=>{e.preventDefault();escaparNo();},{passive:false});
+btnSi.addEventListener("click",()=>irAPantalla(1));
+
+/* ============================================================
+   PANTALLA 2 — calendario (solo sábados y domingos)
+   ============================================================ */
+const nombresDias=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+const hoy=new Date(); hoy.setHours(0,0,0,0);
+function construirMes(anio,mes){
+  const div=document.createElement("div"); div.className="mes";
+  const t=document.createElement("div"); t.className="mes-titulo";
+  t.textContent=new Date(anio,mes,1).toLocaleDateString("es-UY",{month:"long",year:"numeric"});
+  div.appendChild(t);
+  const g=document.createElement("div"); g.className="grilla";
+  nombresDias.forEach(n=>{ const h=document.createElement("div"); h.className="dia-encabezado"; h.textContent=n; g.appendChild(h); });
+  const offset=(new Date(anio,mes,1).getDay()+6)%7;
+  for(let i=0;i<offset;i++){ const v=document.createElement("div"); v.className="dia vacio"; g.appendChild(v); }
+  const dias=new Date(anio,mes+1,0).getDate();
+  for(let d=1;d<=dias;d++){
+    const fecha=new Date(anio,mes,d), ds=fecha.getDay(), finde=(ds===0||ds===6), pasado=fecha<hoy;
+    const c=document.createElement("div"); c.className="dia"; c.textContent=d;
+    if(finde&&!pasado){
+      c.classList.add("finde"); c.setAttribute("role","button"); c.setAttribute("tabindex","0");
+      c.setAttribute("aria-label",fecha.toLocaleDateString("es-UY",{weekday:"long",day:"numeric",month:"long"}));
+      const el=()=>seleccionarFecha(fecha,c);
+      c.addEventListener("click",el);
+      c.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();el();}});
+    } else c.classList.add("deshabilitado");
+    g.appendChild(c);
+  }
+  div.appendChild(g); return div;
+}
+function seleccionarFecha(fecha,celda){
+  document.querySelectorAll(".dia.seleccionado").forEach(c=>c.classList.remove("seleccionado"));
+  celda.classList.add("seleccionado");
+  seleccion.fecha=fecha;
+  seleccion.fechaTxt=fecha.toLocaleDateString("es-UY",{weekday:"long",day:"numeric",month:"long"});
+  document.getElementById("btnFecha").disabled=false;
+}
+(function(){ const cont=document.getElementById("calendarios"), a=hoy.getFullYear(), m=hoy.getMonth();
+  cont.appendChild(construirMes(a,m)); const s=new Date(a,m+1,1); cont.appendChild(construirMes(s.getFullYear(),s.getMonth())); })();
+document.getElementById("btnFecha").addEventListener("click",()=>irAPantalla(2));
+
+/* ============================================================
+   PANTALLA 3 — desplegable de lugar
+   ============================================================ */
+(function(){
+  const sel=document.getElementById("selectLugar");
+  CONFIG.lugares.forEach(l=>{ const o=document.createElement("option"); o.value=l.nombre; o.textContent=l.emoji+"  "+l.nombre; sel.appendChild(o); });
+  sel.addEventListener("change",()=>{
+    const l=CONFIG.lugares.find(x=>x.nombre===sel.value);
+    if(!l){ seleccion.lugar=null; document.getElementById("btnLugar").disabled=true; return; }
+    seleccion.lugar=l;
+    document.getElementById("lugarElegido").textContent=l.nombre+" "+l.emoji;
+    document.getElementById("btnLugar").disabled=false;
+  });
+})();
+document.getElementById("btnLugar").addEventListener("click",()=>irAPantalla(3));
+
+/* ============================================================
+   PANTALLA 4 — planes
+   ============================================================ */
+(function(){
+  const cont=document.getElementById("planes");
+  CONFIG.planes.forEach(plan=>{
+    const card=document.createElement("div"); card.className="plan";
+    card.setAttribute("role","button"); card.setAttribute("tabindex","0"); card.setAttribute("aria-label",plan.titulo);
+    card.innerHTML=`<div class="plan-emoji">${plan.emoji}</div>
+      <div class="plan-txt"><h3>${plan.titulo}</h3><p>${plan.desc}</p></div><div class="check">💗</div>`;
+    const el=()=>seleccionarPlan(plan,card);
+    card.addEventListener("click",el);
+    card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();el();}});
+    cont.appendChild(card);
+  });
+})();
+function seleccionarPlan(plan,card){
+  document.querySelectorAll(".plan.activo").forEach(p=>p.classList.remove("activo"));
+  card.classList.add("activo"); seleccion.plan=plan; document.getElementById("btnPlan").disabled=false;
+}
+document.getElementById("btnPlan").addEventListener("click",()=>{ armarResumen(); irAPantalla(4); });
+
+/* ============================================================
+   PANTALLA 5 — resumen + envío de mails + WhatsApp + confetti
+   ============================================================ */
+function frasePlan(){
+  const f=seleccion.fechaTxt||"el día que elijas";
+  const l=seleccion.lugar?(seleccion.lugar.nombre+" "+seleccion.lugar.emoji):"donde quieras";
+  const p=seleccion.plan?(seleccion.plan.titulo.toLowerCase()+" "+seleccion.plan.emoji):"algo lindo";
+  return {f,l,p};
+}
+function armarResumen(){
+  const {f,l,p}=frasePlan();
+  document.getElementById("resumenFinal").innerHTML=`Nos vemos el <b>${f}</b> en <b>${l}</b> para <b>${p}</b> 💕`;
+
+  // Botón de WhatsApp (opcional): red de seguridad para que a Emanuel le llegue el plan
+  const wa=CONFIG.contacto.whatsappMio;
+  if(wa){
+    const texto=encodeURIComponent(`¡Dije que sí! 💕 Nos vemos el ${seleccion.fechaTxt} en ${seleccion.lugar.nombre} para ${seleccion.plan.titulo}. — ${CONFIG.ella}`);
+    const btn=document.getElementById("btnWhatsapp");
+    btn.href=`https://wa.me/${wa}?text=${texto}`;
+    btn.style.display="inline-flex";
+    btn.textContent="💬 Avisale a "+CONFIG.autor;
+  }
+}
+
+function estaConfigurado(){
+  const e=CONFIG.contacto;
+  return e.emailMio && e.emailjs.publicKey && e.emailjs.serviceId && e.emailjs.templateId;
+}
+async function enviarMail(destino, nombreDestino){
+  const e=CONFIG.contacto, {f,l,p}=frasePlan();
+  const params={
+    to_email:destino, to_name:nombreDestino, de_parte:CONFIG.autor, nombre_ella:CONFIG.ella,
+    fecha:seleccion.fechaTxt, lugar:seleccion.lugar?seleccion.lugar.nombre:"", plan:seleccion.plan?seleccion.plan.titulo:"",
+    mensaje:`Nos vemos el ${seleccion.fechaTxt} en ${seleccion.lugar?seleccion.lugar.nombre:""} para ${seleccion.plan?seleccion.plan.titulo:""} 💕`
+  };
+  const res=await fetch("https://api.emailjs.com/api/v1.0/email/send",{
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ service_id:e.emailjs.serviceId, template_id:e.emailjs.templateId, user_id:e.emailjs.publicKey, template_params:params })
+  });
+  if(!res.ok) throw new Error("EmailJS "+res.status+": "+(await res.text()));
+}
+async function notificar(){
+  const estado=document.getElementById("estadoMail");
+  if(!estaConfigurado()){ console.warn("EmailJS sin configurar: completá CONFIG.contacto (emailMio + emailjs)."); return; }
+  estado.textContent="Enviando el plan… 💌";
+  try{
+    await enviarMail(CONFIG.contacto.emailMio, CONFIG.autor);                    // tu copia (la importante)
+    if(CONFIG.contacto.emailElla) await enviarMail(CONFIG.contacto.emailElla, CONFIG.ella); // copia para ella
+    estado.textContent="¡Listo, ya está enviado! 💌";
+  }catch(err){ console.error("No se pudo enviar el mail:",err); estado.textContent="Guardá esta pantalla 💕"; }
+}
+
+function lanzarConfetti(){
+  const cont=document.getElementById("confetti"); const e=["💗","💕","🩷","💖","🌸","✨"];
+  for(let i=0;i<40;i++){ const s=document.createElement("span");
+    s.textContent=e[Math.floor(Math.random()*e.length)]; s.style.left=Math.random()*100+"%";
+    s.style.fontSize=(16+Math.random()*20)+"px"; s.style.animationDuration=(2.5+Math.random()*2.5)+"s";
+    s.style.animationDelay=(Math.random()*1.5)+"s"; cont.appendChild(s); setTimeout(()=>s.remove(),6000); }
+}
+</script>
+</body>
+</html>
